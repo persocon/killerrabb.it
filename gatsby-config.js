@@ -32,7 +32,12 @@ module.exports = {
       },
     },
     `gatsby-plugin-sass`,
-    `gatsby-plugin-offline`,
+    {
+      resolve: `gatsby-plugin-offline`,
+      options: {
+        cacheId: `tkrp-offline`
+      }
+    },
     {
       resolve: `gatsby-plugin-sitemap`,
       options: {
@@ -75,6 +80,7 @@ module.exports = {
         // If you do not provide a crossOrigin option, it will skip CORS for manifest.
         // Any invalid keyword or empty string defaults to `anonymous`
         crossOrigin: `use-credentials`,
+        gcm_sender_id: "103953800507",
       },
     }
   ],

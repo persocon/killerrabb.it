@@ -6,6 +6,7 @@
   "author": "Kyle Mathews <mathews.kyle@gmail.com>",
   "dependencies": {
     "@mangocorporation/mango-slugfy": "^1.0.2",
+    "firebase": "^6.3.1",
     "gatsby": "^2.10.4",
     "gatsby-image": "^2.2.6",
     "gatsby-plugin-canonical-urls": "^2.1.2",
@@ -27,6 +28,9 @@
     "react-helmet": "^5.2.1"
   },
   "devDependencies": {
+    "@babel/cli": "^7.5.5",
+    "@babel/core": "^7.5.5",
+    "babel-plugin-transform-inline-environment-variables": "^0.4.3",
     "prettier": "^1.18.2"
   },
   "keywords": [
@@ -34,13 +38,15 @@
   ],
   "license": "MIT",
   "scripts": {
+    "build:sw": "babel --plugins transform-inline-environment-variables static/sw-push-notification.js --out-file static/sw-push-notification.bundle.js",
     "build": "gatsby build",
+    "predevelop": "npm run build:sw",
     "develop": "gatsby develop",
     "format": "prettier --write src/**/*.{js,jsx}",
     "start": "npm run develop",
     "serve": "gatsby serve",
     "test": "echo \"Write tests! -> https://gatsby.dev/unit-testing\"",
-    "prebuild": "gatsby clean",
+    "prebuild": "gatsby clean && npm run build:sw",
     "deploy": "rsync -rvh --progress --delete-after -e \"ssh -o StrictHostKeyChecking=no\" ./public/ $SSH_TKRP"
   },
   "browserslist": [
