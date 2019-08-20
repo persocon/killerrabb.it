@@ -1,0 +1,56 @@
+.blog {
+  color: #ffffff;
+  h1 {
+    font-size: 26px;
+    margin: 10px 0;
+    padding: 0px 20px;
+    @media screen and (max-width: 800px) {
+      padding: 10px;
+    }
+  }
+  h2 {
+    font-size: 24px;
+    margin: 10px 0;
+  }
+  p {
+    font-size: 16px;
+    line-height: 1.4;
+    margin: 5px 0;
+  }
+  sup {
+    font-size: 12px;
+    vertical-align: super;
+  }
+  .footnotes {
+    font-size: 14px;
+    padding: 20px 0;
+    ol {
+      list-style: decimal inside;
+    }
+  }
+  article {
+    color: #FFFFFF;
+    font-size: 16px;
+    line-height: 20px;
+    margin: 0;
+    padding: 30px 20px;
+    background: #33323a;
+    h1 {
+      padding: 0;
+    }
+    a:link, a:visited {
+      color: rgb(250, 202, 207);
+      text-decoration: underline;
+    }
+    @media screen and (max-width: 800px) {
+      margin: 0;
+      padding: 30px 10px;
+    }
+    .gatsby-resp-image-wrapper {
+      margin: 20px 0;
+    }
+    &.blog-posts {
+      margin: 10px 0;
+    }
+  }
+}
