@@ -1,0 +1,29 @@
+
+settings:
+  react:
+    version: detect
+  propWrapperFunctions:
+    - forbidExtraProps
+    - property: freeze
+      object: Object
+  linkComponents:
+    - name: Link
+      linkAttribute: to
+env:
+  jest: true
+  es6: true
+  node: true
+  browser: true
+parser: babel-eslint
+parserOptions:
+  ecmaVersion: 2017
+extends:
+  - prettier
+plugins:
+  - prettier 
+rules:
+  prettier/prettier:
+    - error
+  no-unused-vars: error
+  no-undef: error
+  no-shadow: error

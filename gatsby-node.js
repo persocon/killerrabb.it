@@ -1,81 +1,114 @@
-const path = require(`path`)
-const mangoSlugfy = require(`@mangocorporation/mango-slugfy`)
-const { createRemoteFileNode } = require(`gatsby-source-filesystem`)
+const path = require("path")
+const cleanStack = require("clean-stack")
+const slugify = require("@mangocorporation/mango-slugfy")
+const { trace } = require("xtrace")
+const { createRemoteFileNode } = require("gatsby-source-filesystem")
+const {
+  forEach,
+  range,
+  addIndex,
+  map,
+  pathOr,
+  curry,
+  pipe,
+  propOr,
+  divide,
+  __: $,
+} = require("ramda")
 
-const paginationPath = (page, totalPages) => {
-  if (page === 0) {
-    return '/'; 
-  } else if (page < 0 || page >= totalPages) {
-    return ''
-  } else {
-    return `/${page + 1}`
+const paginationPath = curry((total, page) =>
+  page === 0 ? "/" : page < 0 || page >= total ? "" : `${page + 1}`
+)
+
+const tryCatch = curry((catcher, deets, tryer) => {
+  try {
+    tryer(deets)
+  } catch (e) {
+    catcher(e)
   }
+})
+
+const POSTS_PER_PAGE = 3
+const getTotalPages = pipe(
+  propOr(0, "length"),
+  divide($, POSTS_PER_PAGE),
+  Math.ceil
+)
+
+const shrug = error => {
+  console.log(
+    `errors are XGH`,
+    error.msg,
+    error.stack ? cleanStack(error.stack) : "no stack, no problem"
+  )
+  throw error
 }
 
-exports.createPages = async ({ actions, graphql }) => {
-  try {
-    const { data } = await graphql(`
-      query API_ListQuery {
-        api {
-          albums(order: "DESC") {
-            id
-            title
-            cover_photo_base_url
-            order
-            content
-            cover_photo {
-              absolutePath
-              childImageSharp {
-                fluid(quality: 100) {
-                  aspectRatio
-                  src
-                  srcSet
-                  srcWebp
-                  srcSetWebp
-                  sizes
-                }
-              }
-            }
+const QUERY_LIST = `
+query API_ListQuery {
+  api {
+    albums(order: "DESC") {
+      id
+      title
+      cover_photo_base_url
+      order
+      content
+      cover_photo {
+        absolutePath
+        childImageSharp {
+          fluid(quality: 100) {
+            aspectRatio
+            src
+            srcSet
+            srcWebp
+            srcSetWebp
+            sizes
           }
         }
       }
-    `)
-
-    const {albums} = data.api;
-
-    const posts = albums;
-    const postsPerPage = 3;
-    const numPages = Math.ceil(posts.length / postsPerPage);
-    Array.from({ length: numPages }).forEach((_, i) => {
-      actions.createPage({
-        path: paginationPath(i, numPages),
-        component: path.resolve("./src/templates/list.js"),
-        context: {
-          limit: postsPerPage,
-          skip: i * postsPerPage,
-          numPages,
-          currentPage: i + 1,
-          prevPath: paginationPath(i - 1, numPages),
-          nextPath: paginationPath(i + 1, numPages)
-        },
-      });
-    });
-
-    albums.forEach(({ id, title }) => {
-      actions.createPage({
-        path: mangoSlugfy(title),
-        component: path.resolve(`./src/templates/album.js`),
-        context: {
-          albumId: id,
-        },
-      })
-    })
-  } catch (e) {
-    console.log("ERROR", e)
+    }
   }
 }
+`
 
+const imap = addIndex(map)
 
+const createPages = async ([actions, graphql]) => {
+  const pages = pipe(
+    await graphql,
+    pathOr(false, ["data", "api", "albums"])
+  )(QUERY_LIST)
+  const numPages = getTotalPages(pages)
+  if (numPages === 0) return
+  const paginate = paginationPath(numPages)
+  pipe(
+    range(0),
+    imap((_, i) => ({
+      path: paginate(i),
+      context: {
+        limit: POSTS_PER_PAGE,
+        skip: i * POSTS_PER_PAGE,
+        numPages,
+        currentPage: i + 1,
+        prevPath: paginate(i - 1),
+        nextPath: paginate(i + 1),
+      },
+    })),
+    trace("pages to create"),
+    forEach(actions.createPage)
+  )(numPages)
+  pipe(
+    ({ id, title }) => ({
+      path: slugify(title),
+      component: path.resolve("./src/templates/album.js"),
+      context: { albumId: id },
+    }),
+    forEach(actions.createPage)
+  )(pages)
+}
+
+exports.createPages = async ({ actions, graphql }) =>
+  await tryCatch(shrug, [actions, graphql], createPages)
 
 exports.createResolvers = ({
   actions,
@@ -90,9 +123,9 @@ exports.createResolvers = ({
     API_Photo: {
       imageFile: {
         type: `File`,
-        resolve(source, args, context, info) {
+        resolve({ base_url }) {
           return createRemoteFileNode({
-            url: source.base_url,
+            url: base_url,
             store,
             cache,
             createNode,
@@ -105,9 +138,9 @@ exports.createResolvers = ({
     API_Album: {
       cover_photo: {
         type: `File`,
-        resolve(source, args, context, info) {
+        resolve({ cover_photo_base_url }) {
           return createRemoteFileNode({
-            url: source.cover_photo_base_url,
+            url: cover_photo_base_url,
             store,
             cache,
             createNode,
